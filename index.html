@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radon Awareness Survey — Interactive Dashboard</title>
+<style>
+:root {
+  --bg:#f5f7fa; --panel:#ffffff; --text:#172033; --muted:#667085; --line:#e4e7ec;
+  --navy:#173b57; --teal:#2b7a78; --blue:#4f7ea8; --gold:#c9963b; --red:#b55c5c;
+  --soft:#edf2f6; --radius:16px;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:Inter,Segoe UI,Arial,sans-serif; color:var(--text); background:var(--bg); }
+header { background:var(--navy); color:white; padding:24px 28px; }
+.header-inner { max-width:1240px; margin:auto; display:flex; justify-content:space-between; gap:24px; align-items:flex-end; flex-wrap:wrap; }
+h1 { margin:0; font-size:28px; letter-spacing:-.02em; }
+.title-sep { display:inline-block; margin:0 .12em; }
+.byline { margin-top:7px; font-size:11px; opacity:.72; letter-spacing:.01em; }
+.subtitle { margin-top:6px; opacity:.8; font-size:14px; }
+.meta { text-align:right; font-size:13px; opacity:.9; }
+main { max-width:1240px; margin:auto; padding:22px; }
+.filters { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
+.filter-grid { display:grid; grid-template-columns:repeat(4,minmax(140px,1fr)); gap:12px; }
+label { font-size:12px; color:var(--muted); font-weight:600; }
+select,button { font:inherit; }
+select { width:100%; margin-top:6px; padding:10px 11px; border:1px solid var(--line); border-radius:10px; background:white; color:var(--text); }
+.actions { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:12px; flex-wrap:wrap; }
+button { border:1px solid var(--line); background:white; border-radius:10px; padding:9px 12px; cursor:pointer; color:var(--text); }
+button:hover { border-color:#b9c2cc; }
+button.primary { background:var(--navy); color:white; border-color:var(--navy); }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { font-size:12px; padding:6px 9px; border-radius:999px; background:var(--soft); color:var(--muted); }
+.warning { display:none; margin-top:12px; padding:10px 12px; border-radius:10px; background:#fff6e8; border:1px solid #efd7aa; font-size:13px; }
+.kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:16px 0; }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
+.kpi-label { font-size:12px; color:var(--muted); }
+.kpi-value { font-size:28px; font-weight:750; margin-top:5px; letter-spacing:-.02em; }
+.kpi-note { font-size:12px; color:var(--muted); margin-top:4px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.section-title { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:12px; }
+.section-title h2 { margin:0; font-size:17px; }
+.section-title span { font-size:12px; color:var(--muted); }
+.bar-row { margin:11px 0; }
+.bar-label { display:flex; justify-content:space-between; gap:14px; font-size:13px; }
+.track { height:9px; background:var(--soft); border-radius:999px; overflow:hidden; margin-top:5px; }
+.fill { height:100%; background:var(--blue); border-radius:999px; }
+.clickbar { width:100%; border:1px solid transparent; background:transparent; padding:7px; text-align:left; border-radius:10px; }
+.clickbar:hover { border-color:var(--line); background:#fafbfc; }
+.clickbar.active { border-color:var(--teal); background:#f1f8f7; }
+.knowledge-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.donut-card { border:1px solid var(--line); border-radius:14px; padding:14px; background:#fcfdff; }
+.donut-label { font-size:13px; font-weight:600; line-height:1.4; min-height:54px; }
+.donut-row { display:flex; gap:16px; align-items:center; margin-top:10px; }
+.donut { width:120px; height:120px; border-radius:50%; position:relative; flex:0 0 120px; }
+.donut-hole { position:absolute; inset:18px; background:white; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.donut-hole strong { font-size:24px; line-height:1; }
+.donut-hole span { font-size:11px; color:var(--muted); margin-top:4px; }
+.donut-stats { flex:1; display:grid; gap:6px; }
+.donut-stat { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; }
+.donut-stat-label { display:flex; align-items:center; gap:6px; color:var(--muted); }
+.legend { display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--muted); }
+.dot { width:9px; height:9px; display:inline-block; border-radius:2px; margin-right:0; }
+.zip-list { display:flex; flex-wrap:wrap; gap:8px; }
+.zip-item { padding:8px 12px; border:1px solid var(--line); border-radius:999px; background:#fcfdff; font-size:12px; font-weight:600; display:flex; gap:6px; align-items:center; }
+.zip-pct { color:var(--muted); font-weight:500; }
+.combo-list { display:flex; flex-direction:column; gap:8px; }
+.combo-btn { text-align:left; width:100%; padding:10px; }
+.combo-btn.active { border-color:var(--teal); background:#f1f8f7; }
+.combo-inner { display:grid; grid-template-columns:minmax(0,1fr) 88px; gap:14px; align-items:center; font-size:13px; }
+.combo-name { line-height:1.35; min-width:0; }
+.combo-inner strong { text-align:right; white-space:nowrap; }
+.footer-note { color:var(--muted); font-size:12px; line-height:1.5; margin:12px 2px 30px; }
+.empty { color:var(--muted); font-size:13px; padding:8px 0; }
+@media (max-width:900px) {
+  .filter-grid { grid-template-columns:repeat(2,1fr); }
+  .kpis { grid-template-columns:repeat(2,1fr); }
+  .grid2 { grid-template-columns:1fr; }
+  .knowledge-grid { grid-template-columns:1fr; }
+}
+@media (max-width:520px) {
+  .donut-row { flex-direction:column; align-items:flex-start; }
+  .donut { width:110px; height:110px; flex-basis:110px; }
+  .donut-hole { inset:16px; }
+  header { padding:20px; } main { padding:14px; }
+  .filter-grid { grid-template-columns:1fr; }
+  .kpis { grid-template-columns:1fr 1fr; }
+  .kpi-value { font-size:23px; }
+  .meta { text-align:left; }
+}
+
+.password-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--navy);
+}
+.password-box {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  border: 1px solid var(--line);
+}
+.password-box h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+.password-box p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.password-box input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+}
+.password-box button {
+  width: 100%;
+  margin-top: 10px;
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+.password-error {
+  min-height: 18px;
+  margin-top: 9px;
+  color: #a33;
+  font-size: 12px;
+}
+body.locked > header,
+body.locked > main {
+  display: none;
+}
+
+</style>
+</head>
+<body class="locked">
+
+<div id="passwordGate" class="password-gate">
+  <div class="password-box">
+    <h2>Radon Awareness Survey</h2>
+    <p>Enter the password to view the dashboard.</p>
+    <form id="passwordForm">
+      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password">
+      <button type="submit">Enter</button>
+      <div id="passwordError" class="password-error" aria-live="polite"></div>
+    </form>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <h1>Radon Awareness Survey <span class="title-sep">—</span> Interactive Dashboard</h1>
+      <div class="byline">by Dr. Jessica M. Madrigal &amp; Dr. Yu-Sheng Lee</div>
+    </div>
+    <div class="meta"><span id="datafreeze">Loading data…</span><br><span id="period"></span></div>
+  </div>
+</header>
+
+<main>
+  <section class="filters">
+    <div class="filter-grid">
+      <label>Age group<select id="age"><option value="">All</option></select></label>
+      <label>Gender<select id="gender"><option value="">All</option></select></label>
+      <label>Housing<select id="housing"><option value="">All</option></select></label>
+      <label>Own / Rent<select id="tenure"><option value="">All</option></select></label>
+    </div>
+    <div class="actions">
+      <div id="chips" class="chips"></div>
+      <div>
+        <button id="reset" class="primary">Reset all</button>
+      </div>
+    </div>
+    <div id="warning" class="warning"></div>
+  </section>
+
+  <section class="kpis">
+    <div class="card"><div class="kpi-label">Responses</div><div id="kpiN" class="kpi-value">86</div><div class="kpi-note">filtered n</div></div>
+    <div class="card"><div class="kpi-label">Heard of radon</div><div id="kpiHeard" class="kpi-value">81.4%</div><div id="kpiHeardN" class="kpi-note">70 yes</div></div>
+    <div class="card"><div class="kpi-label">Home ever tested</div><div id="kpiTested" class="kpi-value">25.6%</div><div id="kpiTestedN" class="kpi-note">22 yes</div></div>
+    <div class="card"><div class="kpi-label">More likely to test</div><div id="kpiIntent" class="kpi-value">84.9%</div><div id="kpiIntentN" class="kpi-note">73 yes</div></div>
+    <div class="card"><div class="kpi-label">Interested in free kit</div><div id="kpiKit" class="kpi-value">94.2%</div><div id="kpiKitN" class="kpi-note">81 yes</div></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="section-title"><h2>Age group</h2><span>Click to filter</span></div>
+      <div id="ageBars"></div>
+    </section>
+    <section class="card">
+      <div class="section-title"><h2>Gender</h2><span>Click to filter</span></div>
+      <div id="genderBars"></div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-bottom:16px">
+    <div class="section-title"><h2>ZIP codes represented</h2></div>
+    <div id="zipList" class="zip-list"></div>
+  </section>
+
+  <section class="card" style="margin-bottom:16px">
+    <div class="section-title">
+      <div><h2>Radon knowledge items</h2><span>Q7–Q14 • current filtered group</span></div>
+    </div>
+    <div id="knowledge"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <div class="section-title"><h2>What would encourage testing?</h2><span>Multiple response</span></div>
+      <div id="q18Bars"></div>
+    </section>
+    <section class="card">
+      <div class="section-title">
+        <div><h2>Exact combinations</h2><span>Click a combination to filter</span></div>
+        <button id="showAll">Show all</button>
+      </div>
+      <div id="combos" class="combo-list"></div>
+    </section>
+  </div>
+
+  <div class="footer-note">
+    Percentages use the current filtered n as the denominator, including missing responses, matching the current summary-table convention.
+    For a public dashboard, review suppression rules for small cells before publishing highly specific filters.
+  </div>
+</main>
+
+<script>
+
+const DASHBOARD_PASSWORD = "Radon_UIS26";
+const passwordGate = document.getElementById("passwordGate");
+const passwordForm = document.getElementById("passwordForm");
+const passwordInput = document.getElementById("passwordInput");
+const passwordError = document.getElementById("passwordError");
+
+function unlockDashboard() {
+  document.body.classList.remove("locked");
+  passwordGate.style.display = "none";
+  sessionStorage.setItem("radonDashboardUnlocked", "1");
+}
+
+if (sessionStorage.getItem("radonDashboardUnlocked") === "1") {
+  unlockDashboard();
+} else {
+  passwordInput.focus();
+}
+
+passwordForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (passwordInput.value === DASHBOARD_PASSWORD) {
+    unlockDashboard();
+  } else {
+    passwordError.textContent = "Incorrect password.";
+    passwordInput.select();
+  }
+});
+
+let DATA = [];
+
+const LABELS = {
+  age: {"1":"18–24","2":"25–34","3":"35–44","4":"45–54","5":"55–64","6":"65 or older","7":"Prefer not to answer"},
+  gender: {"1":"Male","2":"Female"},
+  housing: {"1":"Single-family home","2":"Apartment / Condominium / Townhome","3":"Mobile home","4":"Other"},
+  tenure: {"1":"Own","2":"Rent","3":"Other"},
+  knowledge: {"1":"None","2":"Low","3":"Moderate","4":"High"},
+  q18: {
+    "1":"Recommendation from a healthcare provider",
+    "2":"Concern for children or family members",
+    "3":"Free or low-cost test kit",
+    "4":"Information from a library or public health agency",
+    "5":"Knowing someone affected by lung cancer"
+  }
+};
+
+const QTEXT = {
+  q8:"Radon naturally occurs in bedrock materials and passes through the soil.",
+  q9:"Radon is a colorless, odorless, radioactive gas that can be found in residential homes.",
+  q10:"Radon can enter homes through cracks, drains, or openings in foundations.",
+  q11:"Exposure to radon gas can cause lung cancer.",
+  q12:"Exposure to radon gas is the second leading cause of lung cancer in the United States.",
+  q13:"Radon testing is the only way to know if radon is a problem in your home.",
+  q14:"Radon test kits are low-cost and widely available."
+};
+
+const state = { combo:"", showAll:false };
+const $ = id => document.getElementById(id);
+const controls = {age:$("age"),gender:$("gender"),housing:$("housing"),tenure:$("tenure")};
+
+function addOptions(select, entries) {
+  entries.forEach(([v,l]) => {
+    const o=document.createElement("option"); o.value=v; o.textContent=l; select.appendChild(o);
+  });
+}
+
+function filtered(skip="") {
+  return DATA.filter(d =>
+    (skip==="age" || !controls.age.value || d.age===controls.age.value) &&
+    (skip==="gender" || !controls.gender.value || d.gender===controls.gender.value) &&
+    (skip==="housing" || !controls.housing.value || d.housing===controls.housing.value) &&
+    (skip==="tenure" || !controls.tenure.value || d.tenure===controls.tenure.value) &&
+    (skip==="combo" || !state.combo || d.q18===state.combo)
+  );
+}
+
+const pct=(n,d)=>d ? (100*n/d).toFixed(1)+"%" : "—";
+
+function setMetric(valueId,noteId,n,d) {
+  $(valueId).textContent=pct(n,d);
+  $(noteId).textContent=d ? `${n} yes` : "No respondents";
+}
+
+function comboLabel(code) {
+  return code ? code.split(",").map(x=>LABELS.q18[x]).join(" + ") : "Missing";
+}
+
+function renderChips() {
+  const chips=[];
+  if(controls.age.value) chips.push("Age: "+LABELS.age[controls.age.value]);
+  if(controls.gender.value) chips.push("Gender: "+LABELS.gender[controls.gender.value]);
+  if(controls.housing.value) chips.push("Housing: "+LABELS.housing[controls.housing.value]);
+  if(controls.tenure.value) chips.push("Tenure: "+LABELS.tenure[controls.tenure.value]);
+  if(state.combo) chips.push("Q18 exact combination");
+  $("chips").innerHTML = chips.length ? chips.map(x=>`<span class="chip">${x}</span>`).join("") : `<span class="chip">No filters applied</span>`;
+}
+
+function renderClickableBars(containerId,map,field,skip,selected) {
+  const base=filtered(skip), den=base.length;
+  $(containerId).innerHTML=Object.entries(map).map(([code,label])=>{
+    const n=base.filter(d=>d[field]===code).length, p=den?100*n/den:0;
+    return `<button class="clickbar ${selected===code?"active":""}" data-code="${code}">
+      <div class="bar-label"><span>${label}</span><strong>${n} (${p.toFixed(1)}%)</strong></div>
+      <div class="track"><div class="fill" style="width:${p}%"></div></div>
+    </button>`;
+  }).join("");
+  $(containerId).querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    if(field==="age") controls.age.value = controls.age.value===b.dataset.code ? "" : b.dataset.code;
+    if(field==="gender") controls.gender.value = controls.gender.value===b.dataset.code ? "" : b.dataset.code;
+    render();
+  }));
+}
+
+function renderKnowledge(f) {
+  const den=f.length;
+
+  const q7Order=[
+    {code:"4",label:"High",color:"var(--teal)"},
+    {code:"3",label:"Moderate",color:"var(--blue)"},
+    {code:"2",label:"Low",color:"var(--gold)"},
+    {code:"1",label:"None",color:"var(--red)"}
+  ];
+  const q7Items=q7Order.map(x=>{
+    const n=f.filter(d=>d.knowledge===x.code).length;
+    return {...x,n,p:den?100*n/den:0};
+  });
+  const q7Top=[...q7Items].sort((a,b)=>b.n-a.n)[0] || {label:"—",p:0};
+  let start=0;
+  const q7Stops=q7Items.map(x=>{
+    const from=start;
+    start+=x.p;
+    return `${x.color} ${from}% ${start}%`;
+  }).join(", ");
+
+  const q7Card=`<div class="donut-card">
+    <div class="donut-label">Before today, how would you rate your knowledge of radon?</div>
+    <div class="donut-row">
+      <div class="donut" style="background:conic-gradient(${q7Stops})">
+        <div class="donut-hole"><strong>${q7Top.p.toFixed(1)}%</strong><span>${q7Top.label}</span></div>
+      </div>
+      <div class="donut-stats">
+        ${q7Items.map(x=>`<div class="donut-stat"><span class="donut-stat-label"><i class="dot" style="background:${x.color}"></i>${x.label}</span><strong>${x.n} (${x.p.toFixed(1)}%)</strong></div>`).join("")}
+      </div>
+    </div>
+  </div>`;
+
+  const q8to14=Object.entries(QTEXT).map(([key,label])=>{
+    const c={
+      true:f.filter(d=>d[key]==="1").length,
+      false:f.filter(d=>d[key]==="2").length,
+      unsure:f.filter(d=>d[key]==="3").length,
+      missing:f.filter(d=>d[key]==="").length
+    };
+    const p={};
+    Object.keys(c).forEach(k=>p[k]=den?100*c[k]/den:0);
+    const t1=p.true;
+    const t2=t1+p.false;
+    const t3=t2+p.unsure;
+    return `<div class="donut-card">
+      <div class="donut-label">${label}</div>
+      <div class="donut-row">
+        <div class="donut" style="background:conic-gradient(var(--teal) 0% ${t1}%, var(--red) ${t1}% ${t2}%, var(--gold) ${t2}% ${t3}%, #cdd5df ${t3}% 100%)">
+          <div class="donut-hole"><strong>${p.true.toFixed(1)}%</strong><span>True</span></div>
+        </div>
+        <div class="donut-stats">
+          <div class="donut-stat"><span class="donut-stat-label"><i class="dot" style="background:var(--teal)"></i>True</span><strong>${c.true} (${p.true.toFixed(1)}%)</strong></div>
+          <div class="donut-stat"><span class="donut-stat-label"><i class="dot" style="background:var(--red)"></i>False</span><strong>${c.false} (${p.false.toFixed(1)}%)</strong></div>
+          <div class="donut-stat"><span class="donut-stat-label"><i class="dot" style="background:var(--gold)"></i>Not sure</span><strong>${c.unsure} (${p.unsure.toFixed(1)}%)</strong></div>
+          <div class="donut-stat"><span class="donut-stat-label"><i class="dot" style="background:#cdd5df"></i>Missing</span><strong>${c.missing} (${p.missing.toFixed(1)}%)</strong></div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  $("knowledge").innerHTML=`<div class="knowledge-grid">${q7Card}${q8to14}</div>`;
+}
+
+function renderZipList(f) {
+  const den=f.length;
+  const counts=new Map();
+  f.forEach(d=>{
+    const zip=(d.zip||"").trim();
+    if(zip) counts.set(zip,(counts.get(zip)||0)+1);
+  });
+  const arr=[...counts.entries()].sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true}));
+  $("zipList").innerHTML=arr.length ? arr.map(([zip,n])=>`
+    <div class="zip-item"><span>${zip}</span><span class="zip-pct">${n} (${den?(100*n/den).toFixed(1):"0.0"}%)</span></div>
+  `).join("") : `<div class="empty">No ZIP codes available.</div>`;
+}
+
+function renderQ18(f) {
+  const den=f.length;
+
+  const items=Object.entries(LABELS.q18)
+    .map(([code,label])=>{
+      const n=f.filter(d=>d.q18 && d.q18.split(",").includes(code)).length;
+      const p=den?100*n/den:0;
+      return {code,label,n,p};
+    })
+    .sort((a,b)=>b.n-a.n || a.label.localeCompare(b.label));
+
+  $("q18Bars").innerHTML=items.map(({label,n,p})=>`
+    <div class="bar-row">
+      <div class="bar-label"><span>${label}</span><strong>${n} (${p.toFixed(1)}%)</strong></div>
+      <div class="track"><div class="fill" style="width:${p}%;background:var(--teal)"></div></div>
+    </div>`).join("");
+}
+
+function renderCombos() {
+  const base=filtered("combo"), den=base.length, counts=new Map();
+  base.forEach(d=>{ if(d.q18) counts.set(d.q18,(counts.get(d.q18)||0)+1); });
+  let arr=[...counts.entries()].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]));
+  if(!state.showAll) arr=arr.slice(0,8);
+  $("combos").innerHTML=arr.length ? arr.map(([code,n])=>`
+    <button class="combo-btn ${state.combo===code?"active":""}" data-combo="${code}">
+      <div class="combo-inner"><span class="combo-name">${comboLabel(code)}</span><strong>${n} (${den?(100*n/den).toFixed(1):"0.0"}%)</strong></div>
+    </button>`).join("") : `<div class="empty">No Q18 responses in this filtered group.</div>`;
+  $("combos").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    state.combo = state.combo===b.dataset.combo ? "" : b.dataset.combo; render();
+  }));
+  $("showAll").textContent=state.showAll ? "Show top 8" : "Show all";
+}
+
+function render() {
+  const f=filtered(), n=f.length;
+  $("kpiN").textContent=n;
+  setMetric("kpiHeard","kpiHeardN",f.filter(d=>d.heard==="1").length,n);
+  setMetric("kpiTested","kpiTestedN",f.filter(d=>d.tested==="1").length,n);
+  setMetric("kpiIntent","kpiIntentN",f.filter(d=>d.intent==="1").length,n);
+  setMetric("kpiKit","kpiKitN",f.filter(d=>d.kit==="1").length,n);
+  renderChips();
+
+  const warning=$("warning");
+  if(n===0) { warning.style.display="block"; warning.textContent="No respondents match the current filters."; }
+  else if(n<10) { warning.style.display="block"; warning.textContent=`Small-cell warning: filtered n = ${n}. Review suppression rules before publishing this view.`; }
+  else warning.style.display="none";
+
+  renderClickableBars("ageBars",LABELS.age,"age","age",controls.age.value);
+  renderClickableBars("genderBars",LABELS.gender,"gender","gender",controls.gender.value);
+  renderKnowledge(f);
+  renderZipList(f);
+  renderQ18(f);
+  renderCombos();
+}
+
+Object.values(controls).forEach(x=>x.addEventListener("change",render));
+$("reset").addEventListener("click",()=>{
+  Object.values(controls).forEach(x=>x.value=""); state.combo=""; state.showAll=false; render();
+});
+$("showAll").addEventListener("click",()=>{ state.showAll=!state.showAll; renderCombos(); });
+
+
+async function initDashboard() {
+  try {
+    const response = await fetch("radon.json", {cache:"no-store"});
+    if (!response.ok) throw new Error("Could not load radon.json");
+    const payload = await response.json();
+
+    DATA = Array.isArray(payload) ? payload : (payload.records || []);
+
+    document.getElementById("datafreeze").textContent =
+      payload.datafreeze ? "Datafreeze " + payload.datafreeze : "Radon Survey Data";
+    document.getElementById("period").textContent = payload.period || "";
+
+    addOptions(controls.age,Object.entries(LABELS.age));
+    addOptions(controls.gender,Object.entries(LABELS.gender));
+    addOptions(controls.housing,Object.entries(LABELS.housing));
+    addOptions(controls.tenure,Object.entries(LABELS.tenure));
+
+    render();
+  } catch (err) {
+    document.getElementById("warning").style.display = "block";
+    document.getElementById("warning").textContent =
+      "Dashboard data could not be loaded. Make sure radon.json is in the same folder as index.html.";
+    document.getElementById("datafreeze").textContent = "Data unavailable";
+    console.error(err);
+  }
+}
+
+initDashboard();
+</script>
+</body>
+</html>
